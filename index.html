@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Remote Debugger</title>
+    <style>
+        /* Modern "Hacker" Aesthetic */
+        body {
+            margin: 0;
+            background: #0a0a0a;
+            color: #00ff41;
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden; /* Stops the phone from scrolling */
+            touch-action: none; /* Critical for mobile games */
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            border: 2px solid #00ff41;
+            box-sizing: border-box;
+        }
+
+        #player {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background: #00ff41;
+            left: 50px;
+            top: 50%;
+            box-shadow: 0 0 15px #00ff41;
+        }
+
+        .obstacle {
+            position: absolute;
+            width: 60px;
+            background: #ff003c;
+            right: -100px;
+        }
+
+        #ui-layer {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+            pointer-events: none; /* Clicks go through the text to the game */
+        }
+
+        .status-text {
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 5px 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="player"></div>
+    <div id="ui-layer">
+        <div class="status-text" id="status">SYS_STATUS: GRAVITY_ON</div>
+        <p>TAP SCREEN OR PRESS SPACE TO TOGGLE PHYSICS</p>
+    </div>
+</div>
+
+<script>
+    // 1. GAME VARIABLES
+    let playerY = window.innerHeight / 2;
+    let gravityOn = true;
+    let score = 0;
+    let isGameOver = false;
+
+    const player = document.getElementById('player');
+    const status = document.getElementById('status');
+
+    // 2. INPUT LOGIC (Human-friendly: works for both)
+    function togglePhysics() {
+        if (isGameOver) {
+            location.reload(); // Restart if dead
+            return;
+        }
+        gravityOn = !gravityOn;
+        status.innerText = `SYS_STATUS: GRAVITY_${gravityOn ? 'ON' : 'OFF'}`;
+        status.style.color = gravityOn ? '#00ff41' : '#3cff00';
+    }
+
+    window.addEventListener('touchstart', (e) => { e.preventDefault(); togglePhysics(); });
+    window.addEventListener('keydown', (e) => { if(e.code === 'Space') togglePhysics(); });
+
+    // 3. MAIN GAME LOOP
+    function loop() {
+        if (isGameOver) return;
+
+        // Gravity math
+        if (gravityOn) {
+            playerY += 5; // Fall down
+        } else {
+            playerY -= 5; // Float up
+        }
+
+        // Apply position
+        player.style.top = playerY + "px";
+
+        // Boundary Check
+        if (playerY < 0 || playerY > window.innerHeight - 40) {
+            gameOver();
+        }
+
+        requestAnimationFrame(loop);
+    }
+
+    function gameOver() {
+        isGameOver = true;
+        status.innerText = "CRITICAL_ERROR: CONNECTION_LOST";
+        status.style.color = "#ff003c";
+        alert("Server Crashed! Your Score: " + score + "\nTap to Reboot.");
+    }
+
+    // Start the loop
+    loop();
+
+    // Spawn "Data Corruption" (Obstacles) every 2 seconds
+    setInterval(() => {
+        if (isGameOver) return;
+        score++;
+        // Logic for obstacles would go here next!
+    }, 1000);
+
+</script>
+</body>
+</html>
