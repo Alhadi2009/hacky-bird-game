@@ -3,100 +3,148 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>REMOTE_DEBUGGER // HACK_CLUB</title>
+    <title>HACKER_SURVIVOR // v3.0</title>
     <style>
-        :root {
-            --glow: #00ff41;
-            --danger: #ff003c;
-            --powerup: #ffea00;
-        }
-
-        body {
-            margin: 0;
-            background: #0a0a0a;
-            color: var(--glow);
-            font-family: 'Courier New', Courier, monospace;
-            overflow: hidden;
-            touch-action: none;
-            user-select: none;
-        }
-
-        #game-container {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-            border: 4px solid #111;
-            box-sizing: border-box;
-            transition: background 0.1s;
-        }
-
-        #player {
-            position: absolute;
-            width: 35px;
-            height: 35px;
-            background: var(--glow);
-            left: 50px;
-            top: 50%;
-            box-shadow: 0 0 20px var(--glow);
-            z-index: 10;
-            transition: filter 0.2s;
-        }
-
-        .obstacle {
-            position: absolute;
-            width: 60px;
-            background: var(--danger);
-            box-shadow: 0 0 10px var(--danger);
-        }
-
-        .powerup {
-            position: absolute;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 25px;
-            filter: drop-shadow(0 0 10px var(--powerup));
-        }
-
-        #ui-layer {
-            position: absolute;
-            top: 20px;
-            width: 100%;
-            text-align: center;
-            pointer-events: none;
-        }
-
-        .status-text {
-            font-size: 1.2rem;
-            font-weight: bold;
-            text-shadow: 0 0 5px #000;
-        }
-
-        #score-container {
-            font-size: 0.9rem;
-            margin-top: 5px;
-            opacity: 0.8;
-        }
-
-        /* The Spice: Shake Effect */
-        @keyframes shake {
-            0% { transform: translate(1px, 1px); }
-            20% { transform: translate(-3px, -2px); }
-            40% { transform: translate(3px, 2px); }
-            60% { transform: translate(-3px, 1px); }
-            80% { transform: translate(2px, -1px); }
-            100% { transform: translate(0, 0); }
-        }
-
-        .shake { animation: shake 0.4s; }
+        :root { --glow: #00ff41; --danger: #ff003c; --boss: #ff00ff; }
+        body { margin: 0; background: #050505; color: var(--glow); font-family: 'Courier New', monospace; overflow: hidden; touch-action: none; }
+        #game-container { position: relative; width: 100vw; height: 100vh; }
+        
+        #player { position: absolute; width: 40px; height: 30px; left: 50px; top: 50%; z-index: 10; display: flex; align-items: center; justify-content: center; font-size: 24px; transition: transform 0.1s; }
+        
+        #boss { position: absolute; right: 20px; top: 50%; font-size: 80px; display: none; filter: drop-shadow(0 0 20px var(--boss)); z-index: 8; transition: top 0.5s ease-in-out; }
+        
+        .missile { position: absolute; width: 8px; height: 8px; background: var(--boss); border-radius: 50%; box-shadow: 0 0 10px var(--boss); }
+        .trail { position: absolute; width: 3px; height: 3px; background: var(--glow); pointer-events: none; opacity: 0.6; }
+        .obstacle { position: absolute; width: 50px; background: linear-gradient(to right, #200, var(--danger)); border-left: 2px solid #fff; box-shadow: 0 0 15px var(--danger); }
+        
+        #ui { position: absolute; top: 20px; width: 100%; text-align: center; pointer-events: none; z-index: 100; }
+        .glitch { animation: shake 0.2s infinite; }
+        @keyframes shake { 0% { transform: translate(2px, 2px); } 50% { transform: translate(-2px, -2px); } 100% { transform: translate(0,0); } }
     </style>
 </head>
 <body>
 
 <div id="game-container">
-    <div id="player"></div>
-    <div id="ui-layer">
-        <div class="status-text" id="status">SYS_STATUS:
-            
+    <div id="player">🛸</div>
+    <div id="boss">👁️</div>
+    <div id="ui">
+        <div id="status">TAP TO BYPASS FIREWALL</div>
+        <div style="font-size: 0.8rem;">Score: <span id="score">0</span> | Highscore: <span id="best">0</span></div>
+        <div style="font-size: 0.7rem; opacity: 0.5; margin-top: 10px; letter-spacing: 1px;">
+                        made by Al Hadi 
+    </div>
+</div>
+
+<script>
+    const container = document.getElementById('game-container');
+    const player = document.getElementById('player');
+    const bossEl = document.getElementById('boss');
+    const statusText = document.getElementById('status');
+    const scoreVal = document.getElementById('score');
+
+    let playerY = window.innerHeight / 2;
+    let gravityOn = true, score = 0, isGameOver = false, gameActive = false;
+    let obstacles = [], particles = [], missiles = [];
+    let gameSpeed = 5, bossActive = false;
+
+    document.getElementById('best').innerText = localStorage.getItem('hacker_best') || 0;
+
+    function handleInput(e) {
+        if (e && e.type !== 'keydown') e.preventDefault();
+        if (!gameActive && !isGameOver) {
+            gameActive = true;
+            statusText.innerText = "SYSTEM_BREACHED";
+            setInterval(spawnEntity, 1300);
+            update();
+            return;
+        }
+        if (isGameOver) { location.reload(); return; }
+        gravityOn = !gravityOn;
+        player.style.transform = gravityOn ? "rotate(15deg)" : "rotate(-15deg)";
+    }
+
+    window.addEventListener('touchstart', handleInput, { passive: false });
+    window.addEventListener('mousedown', handleInput);
+    window.addEventListener('keydown', (e) => { if(e.code === 'Space') handleInput(); });
+
+    function spawnEntity() {
+        if (!gameActive || isGameOver || bossActive) return;
+        const entity = document.createElement('div');
+        const h = 100 + Math.random() * 250;
+        const isTop = Math.random() > 0.5;
+        const data = { el: entity, x: window.innerWidth + 50, y: isTop ? 0 : window.innerHeight - h, w: 50, h: h };
+        entity.className = 'obstacle';
+        entity.style.height = h + 'px';
+        entity.style.top = data.y + 'px';
+        container.appendChild(entity);
+        obstacles.push(data);
+    }
+
+    function spawnMissile() {
+        if (!bossActive || isGameOver) return;
+        const m = document.createElement('div');
+        m.className = 'missile';
+        const data = { el: m, x: window.innerWidth - 100, y: parseInt(bossEl.style.top) + 40 };
+        container.appendChild(m);
+        missiles.push(data);
+    }
+
+    function update() {
+        if (!gameActive || isGameOver) return;
+
+        playerY += gravityOn ? 6 : -6;
+        player.style.top = playerY + 'px';
+
+        // Boss Logic
+        if (score > 0 && score % 20 === 0 && !bossActive) {
+            bossActive = true;
+            bossEl.style.display = 'block';
+            statusText.innerText = "WARNING: ADMIN_DETECTED";
+            container.classList.add('glitch');
+            let missileLauncher = setInterval(spawnMissile, 2000);
+            setTimeout(() => { 
+                bossActive = false; 
+                bossEl.style.display = 'none'; 
+                container.classList.remove('glitch');
+                statusText.innerText = "ADMIN_EVADED";
+                clearInterval(missileLauncher);
+                score++; 
+            }, 10000);
+        }
+
+        if (bossActive) bossEl.style.top = (playerY - 40) + "px";
+
+        missiles.forEach((m, i) => {
+            m.x -= 8;
+            m.y += (playerY - m.y) * 0.02;
+            m.el.style.left = m.x + "px";
+            m.el.style.top = m.y + "px";
+            if (m.x < 80 && m.x > 50 && Math.abs(m.y - playerY) < 20) die();
+            if (m.x < -20) { m.el.remove(); missiles.splice(i, 1); }
+        });
+
+        obstacles.forEach((obs, i) => {
+            obs.x -= gameSpeed;
+            obs.el.style.left = obs.x + 'px';
+            if (obs.x < 80 && obs.x + 50 > 50 && playerY < obs.y + obs.h && playerY + 30 > obs.y) die();
+            if (obs.x < -60) {
+                obs.el.remove(); obstacles.splice(i, 1);
+                score++; scoreVal.innerText = score;
+                gameSpeed += 0.05;
+            }
+        });
+
+        if (playerY < 0 || playerY > window.innerHeight - 30) die();
+        requestAnimationFrame(update);
+    }
+
+    function die() {
+        isGameOver = true;
+        const best = localStorage.getItem('hacker_best') || 0;
+        if (score > best) localStorage.setItem('hacker_best', score);
+        alert("ACCESS DENIED\nScore: " + score);
+        location.reload();
+    }
+</script>
+</body>
+</html>
