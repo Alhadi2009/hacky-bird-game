@@ -13,3 +13,6 @@ Editor: GitHub Codespaces.
 Engine: Pure Vanilla JS, HTML5, and CSS3.
 Zero Assets: Everything is rendered with Emojis and code.
 made by Al Hadi 😎
+
+try it here⬇️
+https://alhadi2009.github.io/hacky-bird-game/
